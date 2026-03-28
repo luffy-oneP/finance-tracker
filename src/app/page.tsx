@@ -5,7 +5,8 @@ import { ArrowUpRight, ArrowDownRight, Wallet, TrendingUp, TrendingDown, ArrowRi
 import { formatCurrency } from "@/lib/utils";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { FadeIn, StaggerContainer, StaggerItem, HoverCard } from "@/components/animations";
+import { HoverCard } from "@/components/animations";
+import { useMemo } from "react";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -30,6 +31,14 @@ const itemVariants = {
   },
 };
 
+const TIPS = [
+  "Track expenses daily to build better habits",
+  "Set a budget for each category you spend on",
+  "Review your analytics weekly to spot trends",
+  "Save at least 20% of your income each month",
+  "Use the export feature to backup your data",
+];
+
 export default function Dashboard() {
   const {
     getBalance,
@@ -37,7 +46,6 @@ export default function Dashboard() {
     getTotalExpenses,
     currentMonth,
     getTransactionsByMonth,
-    transactions,
   } = useFinance();
 
   const balance = getBalance();
@@ -45,12 +53,19 @@ export default function Dashboard() {
   const monthlyExpenses = getTotalExpenses(currentMonth);
   const monthlyTransactions = getTransactionsByMonth(currentMonth).slice(0, 5);
 
+  // Use useMemo to avoid recalculating on every render
+  const randomTip = useMemo(() => {
+    // Use date-based seed for consistent tip during the day
+    const daySeed = new Date().getDate() + new Date().getMonth() * 31;
+    return TIPS[daySeed % TIPS.length];
+  }, []);
+
   const stats = [
     {
       name: "Total Balance",
       value: balance,
       icon: Wallet,
-      trend: balance >= 0 ? "positive" : "negative",
+      trend: balance >= 0 ? "positive" : "negative" as const,
       gradient: "from-blue-500 via-blue-600 to-indigo-600",
       bgGradient: "from-blue-500/10 to-indigo-500/5",
     },
@@ -58,7 +73,7 @@ export default function Dashboard() {
       name: "Monthly Income",
       value: monthlyIncome,
       icon: TrendingUp,
-      trend: "positive",
+      trend: "positive" as const,
       gradient: "from-emerald-500 via-emerald-600 to-teal-600",
       bgGradient: "from-emerald-500/10 to-teal-500/5",
     },
@@ -66,21 +81,11 @@ export default function Dashboard() {
       name: "Monthly Expenses",
       value: monthlyExpenses,
       icon: TrendingDown,
-      trend: "negative",
+      trend: "negative" as const,
       gradient: "from-rose-500 via-rose-600 to-pink-600",
       bgGradient: "from-rose-500/10 to-pink-500/5",
     },
   ];
-
-  const tips = [
-    "Track expenses daily to build better habits",
-    "Set a budget for each category you spend on",
-    "Review your analytics weekly to spot trends",
-    "Save at least 20% of your income each month",
-    "Use the export feature to backup your data",
-  ];
-
-  const randomTip = tips[Math.floor(Math.random() * tips.length)];
 
   return (
     <div className="space-y-8">

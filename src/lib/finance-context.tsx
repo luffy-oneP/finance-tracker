@@ -20,8 +20,9 @@ interface FinanceContextType {
   getTotalExpenses: (month?: string) => number;
   getBalance: () => number;
   exportData: () => string;
-  importData: (jsonData: string) => void;
+  importData: (jsonData: string) => boolean;
   currentMonth: string;
+  isLoaded: boolean;
 }
 
 const STORAGE_KEY = "finance-tracker-data";
@@ -35,41 +36,95 @@ function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
+// Validation function for imported data
+function validateFinanceData(data: unknown): data is FinanceData {
+  if (typeof data !== "object" || data === null) return false;
+  
+  const d = data as Record<string, unknown>;
+  
+  // Check transactions array
+  if (!Array.isArray(d.transactions)) return false;
+  for (const t of d.transactions) {
+    if (typeof t !== "object" || t === null) return false;
+    const tx = t as Record<string, unknown>;
+    if (typeof tx.id !== "string") return false;
+    if (typeof tx.amount !== "number") return false;
+    if (typeof tx.description !== "string") return false;
+    if (typeof tx.category !== "string") return false;
+    if (tx.type !== "income" && tx.type !== "expense") return false;
+    if (typeof tx.date !== "string") return false;
+    if (typeof tx.createdAt !== "string") return false;
+  }
+  
+  // Check budgets array
+  if (!Array.isArray(d.budgets)) return false;
+  for (const b of d.budgets) {
+    if (typeof b !== "object" || b === null) return false;
+    const bg = b as Record<string, unknown>;
+    if (typeof bg.id !== "string") return false;
+    if (typeof bg.category !== "string") return false;
+    if (typeof bg.amount !== "number") return false;
+    if (typeof bg.month !== "string") return false;
+  }
+  
+  // Check categories array (optional)
+  if (d.categories !== undefined) {
+    if (!Array.isArray(d.categories)) return false;
+    for (const c of d.categories) {
+      if (typeof c !== "object" || c === null) return false;
+      const cat = c as Record<string, unknown>;
+      if (typeof cat.id !== "string") return false;
+      if (typeof cat.name !== "string") return false;
+      if (cat.type !== "income" && cat.type !== "expense") return false;
+      if (typeof cat.color !== "string") return false;
+      if (typeof cat.icon !== "string") return false;
+    }
+  }
+  
+  return true;
+}
+
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
 
 export function FinanceProvider({ children }: { children: React.ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
-  const [currentMonth] = useState(getCurrentMonth());
+  const [currentMonth] = useState(getCurrentMonth);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load data from localStorage on mount
+  // Load data from localStorage on mount - using a separate effect that runs once
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          const data: FinanceData = JSON.parse(stored);
+    if (typeof window === "undefined") return;
+    
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const data: FinanceData = JSON.parse(stored);
+        // Use requestAnimationFrame to avoid synchronous setState during render
+        requestAnimationFrame(() => {
           setTransactions(data.transactions || []);
           setBudgets(data.budgets || []);
           if (data.categories?.length) {
             setCategories(data.categories);
           }
-        }
-      } catch (error) {
-        console.error("Failed to load data:", error);
+          setIsLoaded(true);
+        });
+      } else {
+        setIsLoaded(true);
       }
+    } catch (error) {
+      console.error("Failed to load data:", error);
       setIsLoaded(true);
     }
   }, []);
 
   // Save data to localStorage whenever it changes
   useEffect(() => {
-    if (isLoaded && typeof window !== "undefined") {
-      const data: FinanceData = { transactions, budgets, categories };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    }
+    if (!isLoaded || typeof window === "undefined") return;
+    
+    const data: FinanceData = { transactions, budgets, categories };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   }, [transactions, budgets, categories, isLoaded]);
 
   const addTransaction = useCallback((transaction: Omit<Transaction, "id" | "createdAt">) => {
@@ -155,22 +210,30 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     return JSON.stringify(data, null, 2);
   }, [transactions, budgets, categories]);
 
-  const importData = useCallback((jsonData: string) => {
+  const importData = useCallback((jsonData: string): boolean => {
     try {
-      const data: FinanceData = JSON.parse(jsonData);
+      const parsed = JSON.parse(jsonData);
+      
+      if (!validateFinanceData(parsed)) {
+        throw new Error("Invalid data format");
+      }
+      
+      const data: FinanceData = parsed;
       if (data.transactions) setTransactions(data.transactions);
       if (data.budgets) setBudgets(data.budgets);
       if (data.categories) setCategories(data.categories);
+      
+      return true;
     } catch (error) {
       console.error("Failed to import data:", error);
-      throw new Error("Invalid data format");
+      return false;
     }
   }, []);
 
   if (!isLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
       </div>
     );
   }
@@ -196,6 +259,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         exportData,
         importData,
         currentMonth,
+        isLoaded,
       }}
     >
       {children}
