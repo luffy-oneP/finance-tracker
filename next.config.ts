@@ -2,8 +2,7 @@
  * @type {import('next').NextConfig}
  */
 const nextConfig = {
-  output: 'export',
-  distDir: 'dist',
+  allowedDevOrigins: ['192.168.1.80'],
   images: {
     unoptimized: true,
   },

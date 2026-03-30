@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Navigation } from "@/components/navigation";
-import { FinanceProvider } from "@/lib/finance-context";
-import { ThemeProvider } from "@/lib/theme-context";
+import { Providers } from "@/components/providers";
 import { Toaster } from "sonner";
 
 const inter = Inter({ 
@@ -24,8 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} antialiased bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-50 min-h-screen`}>
-        <ThemeProvider>
-          <FinanceProvider>
+        <Providers>
           <div className="flex min-h-screen">
             <Navigation />
             <main className="flex-1 overflow-auto relative">
@@ -52,8 +50,7 @@ export default function RootLayout({
               },
             }}
           />
-          </FinanceProvider>
-        </ThemeProvider>
+        </Providers>
       </body>
     </html>
   );
