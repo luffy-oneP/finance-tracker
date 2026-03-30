@@ -5,4 +5,4 @@ export const metadata: Metadata = {
   description: "Manage your income and expenses. Add, edit, and track all your financial transactions.",
 };
 
-export { default } from "./page-client";
+export { default } from "./transactions-client";
