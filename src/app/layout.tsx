@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Navigation } from "@/components/navigation";
-import { FinanceProvider } from "@/lib/finance-context";
-import { ThemeProvider } from "@/lib/theme-context";
-import { Toaster } from "sonner";
+import { Providers } from "@/components/providers";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -24,8 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} antialiased bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-50 min-h-screen`}>
-        <ThemeProvider>
-          <FinanceProvider>
+        <Providers>
           <div className="flex min-h-screen">
             <Navigation />
             <main className="flex-1 overflow-auto relative">
@@ -41,19 +38,7 @@ export default function RootLayout({
               </div>
             </main>
           </div>
-          <Toaster 
-            position="bottom-right"
-            toastOptions={{
-              style: {
-                background: 'rgba(15, 23, 42, 0.95)',
-                backdropFilter: 'blur(10px)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                color: 'white',
-              },
-            }}
-          />
-          </FinanceProvider>
-        </ThemeProvider>
+        </Providers>
       </body>
     </html>
   );

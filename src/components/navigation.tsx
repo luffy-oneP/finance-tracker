@@ -132,7 +132,7 @@ export function Navigation() {
             </p>
           </motion.div>
           <p className="text-xs text-slate-400 dark:text-slate-500 text-center">
-            © 2024 Finance Tracker
+            © 2026 Finance Tracker
           </p>
         </div>
       </nav>
