@@ -11,14 +11,15 @@ import {
   Menu,
   X,
   Wallet,
+  Home,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "./theme-toggle";
 
 const navigation = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Dashboard", href: "/", icon: LayoutDashboard, mobileIcon: Home },
   { name: "Transactions", href: "/transactions", icon: Receipt },
   { name: "Budgets", href: "/budgets", icon: PiggyBank },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
@@ -41,11 +42,38 @@ const navVariants = {
 export function Navigation() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  // Handle scroll for mobile header shadow
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Close menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
+  // Prevent body scroll when menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenuOpen]);
 
   return (
     <>
       {/* Desktop Navigation */}
-      <nav className="hidden md:flex flex-col w-72 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-r border-slate-200 dark:border-slate-800 h-screen sticky top-0 shadow-xl shadow-slate-200/50 dark:shadow-slate-950/50">
+      <nav className="hidden md:flex flex-col w-72 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-r border-slate-200 dark:border-slate-800 h-screen sticky top-0 shadow-xl shadow-slate-200/50 dark:shadow-slate-950/50 flex-shrink-0">
         {/* Logo Section */}
         <div className="p-6">
           <motion.div 
@@ -70,7 +98,7 @@ export function Navigation() {
         </div>
 
         {/* Navigation Links */}
-        <div className="flex-1 px-4 space-y-1">
+        <div className="flex-1 px-4 space-y-1 overflow-y-auto">
           {navigation.map((item, index) => {
             const isActive = pathname === item.href;
             return (
@@ -132,48 +160,67 @@ export function Navigation() {
             </p>
           </motion.div>
           <p className="text-xs text-slate-400 dark:text-slate-500 text-center">
-            © 2024 Finance Tracker
+            © 2026 Finance Tracker
           </p>
         </div>
       </nav>
 
-      {/* Mobile Navigation */}
-      <div className="md:hidden">
-        <motion.div 
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="flex items-center justify-between p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg">
+      {/* Mobile Header */}
+      <header 
+        className={cn(
+          "md:hidden fixed top-0 left-0 right-0 z-50 transition-all duration-300",
+          isScrolled 
+            ? "bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-lg" 
+            : "bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl"
+        )}
+      >
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-800">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-9 h-9 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg">
               <Wallet className="h-5 w-5 text-white" />
             </div>
             <h1 className="text-lg font-bold text-slate-900 dark:text-white">Finance</h1>
-          </div>
+          </Link>
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+              className="p-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
             >
-              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </motion.button>
           </div>
-        </motion.div>
+        </div>
+      </header>
 
-        <AnimatePresence>
-          {mobileMenuOpen && (
+      {/* Mobile Menu Overlay */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <>
+            {/* Backdrop */}
             <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-x-0 top-16 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 shadow-2xl"
+              onClick={() => setMobileMenuOpen(false)}
+              className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+            />
+            
+            {/* Menu Panel */}
+            <motion.div
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="md:hidden fixed top-[65px] left-4 right-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl z-50 overflow-hidden"
             >
-              <nav className="flex flex-col p-4 space-y-1">
+              <nav className="flex flex-col p-2">
                 {navigation.map((item, index) => {
                   const isActive = pathname === item.href;
+                  const Icon = item.mobileIcon || item.icon;
                   return (
                     <motion.div
                       key={item.name}
@@ -185,23 +232,70 @@ export function Navigation() {
                         href={item.href}
                         onClick={() => setMobileMenuOpen(false)}
                         className={cn(
-                          "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors",
+                          "flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all",
                           isActive
-                            ? "bg-gradient-to-r from-blue-500/10 to-purple-500/10 text-blue-600 dark:text-blue-400"
-                            : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+                            ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/25"
+                            : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
                         )}
                       >
-                        <item.icon className={cn("h-5 w-5", isActive ? "text-blue-600 dark:text-blue-400" : "")} />
+                        <Icon className="h-5 w-5" />
                         {item.name}
                       </Link>
                     </motion.div>
                   );
                 })}
               </nav>
+              
+              {/* Mobile Footer Info */}
+              <div className="p-4 border-t border-slate-200 dark:border-slate-800">
+                <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
+                  💰 Your data is stored locally
+                </p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 text-center mt-1">
+                  © 2026 Finance Tracker
+                </p>
+              </div>
             </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 z-40 safe-area-bottom">
+        <div className="flex items-center justify-around px-2 py-2">
+          {navigation.slice(0, 5).map((item) => {
+            const isActive = pathname === item.href;
+            const Icon = item.mobileIcon || item.icon;
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={cn(
+                  "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all min-w-[64px]",
+                  isActive
+                    ? "text-blue-600 dark:text-blue-400"
+                    : "text-slate-400 dark:text-slate-500"
+                )}
+              >
+                <div className={cn(
+                  "p-2 rounded-xl transition-all",
+                  isActive 
+                    ? "bg-gradient-to-br from-blue-500/20 to-purple-500/20" 
+                    : ""
+                )}>
+                  <Icon className="h-5 w-5" />
+                </div>
+                <span className={cn(
+                  "text-[10px] font-medium",
+                  isActive ? "text-slate-900 dark:text-white" : ""
+                )}>
+                  {item.name === "Dashboard" ? "Home" : item.name}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
     </>
   );
 }
